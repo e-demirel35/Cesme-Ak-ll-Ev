@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Akıllı Ev Uzaktan Pano Kontrolü</title>
+    <!-- Paho MQTT Kütüphanesi -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js" type="text/javascript"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: #0f172a; color: #f8fafc; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        h1 { margin-bottom: 10px; color: #38bdf8; font-size: 24px; text-align: center; }
+        .status { margin-bottom: 20px; font-size: 14px; padding: 6px 16px; border-radius: 20px; background: #334155; }
+        .status.online { background: #059669; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; width: 100%; max-width: 600px; }
+        .card { background: #1e293b; border-radius: 12px; padding: 15px; display: flex; flex-direction: column; align-items: center; gap: 10px; border: 1px solid #334155; }
+        .card h3 { font-size: 15px; color: #cbd5e1; }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px; color: white; background-color: #475569; }
+        .btn.active { background-color: #0284c7; box-shadow: 0 0 12px #0284c7; }
+    </style>
+</head>
+<body>
+    <h1>🏠 Akıllı Ev Pano Kontrolü</h1>
+    <div id="status" class="status">Sunucuya Bağlanıyor...</div>
+
+    <div class="grid" id="controls"></div>
+
+    <script>
+        // Ücretsiz Genel MQTT Broker (HiveMQ WebSockets Portu)
+        const broker = "broker.hivemq.com";
+        const port = 8000;
+        const clientID = "web_app_" + Math.random().toString(16).substr(2, 8);
+        const topicCmd = "ev/pano/komut";
+        const topicState = "ev/pano/durum";
+
+        const client = new Paho.MQTT.Client(broker, port, clientID);
+        const states = new Array(12).fill(false);
+
+        client.onConnectionLost = onConnectionLost;
+        client.onMessageArrived = onMessageArrived;
+
+        client.connect({ onSuccess: onConnect, onFailure: onFailure });
+
+        function onConnect() {
+            document.getElementById("status").innerText = "● Sistem Bağlandı (Canlı)";
+            document.getElementById("status").className = "status online";
+            client.subscribe(topicState);
+        }
+
+        function onFailure(err) {
+            document.getElementById("status").innerText = "Bağlantı Hatası: " + err.errorMessage;
+        }
+
+        function onConnectionLost(responseObject) {
+            if (responseObject.errorCode !== 0) {
+                document.getElementById("status").innerText = "Bağlantı Kesildi!";
+                document.getElementById("status").className = "status";
+            }
+        }
+
+        function onMessageArrived(message) {
+            // ESP32'den gelen 12 kanallı durum bilgisi (Örn: "1:1" -> Kanal 1 AÇIK)
+            const payload = message.payloadString.split(":");
+            const ch = parseInt(payload[0]) - 1;
+            const state = payload[1] === "1";
+            
+            states[ch] = state;
+            updateUI(ch + 1, state);
+        }
+
+        function toggleRelay(ch) {
+            const nextState = !states[ch - 1];
+            const msg = new Paho.MQTT.Message(`${ch}:${nextState ? 1 : 0}`);
+            msg.destinationName = topicCmd;
+            client.send(msg);
+        }
+
+        function updateUI(ch, state) {
+            const btn = document.getElementById(`btn-${ch}`);
+            if (btn) {
+                if (state) {
+                    btn.className = "btn active";
+                    btn.innerText = "AÇIK";
+                } else {
+                    btn.className = "btn";
+                    btn.innerText = "KAPALI";
+                }
+            }
+        }
+
+        function renderGrid() {
+            const container = document.getElementById('controls');
+            let html = '';
+            for (let i = 1; i <= 12; i++) {
+                html += `
+                    <div class="card">
+                        <h3>Kanal ${i}</h3>
+                        <button id="btn-${i}" class="btn" onclick="toggleRelay(${i})">KAPALI</button>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        renderGrid();
+    </script>
+</body>
+</html>
