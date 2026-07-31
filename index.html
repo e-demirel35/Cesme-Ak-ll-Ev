@@ -2,36 +2,187 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Akıllı Ev Uzaktan Pano Kontrolü</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rafet Demir - Çeşme Rezidans Akıllı Ev</title>
+    <!-- FontAwesome İkon Kütüphanesi -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Paho MQTT Kütüphanesi -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js" type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+    
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
-        body { background-color: #0f172a; color: #f8fafc; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        h1 { margin-bottom: 10px; color: #38bdf8; font-size: 24px; text-align: center; }
-        .status { margin-bottom: 20px; font-size: 14px; padding: 6px 16px; border-radius: 20px; background: #334155; }
-        .status.online { background: #059669; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; width: 100%; max-width: 600px; }
-        .card { background: #1e293b; border-radius: 12px; padding: 15px; display: flex; flex-direction: column; align-items: center; gap: 10px; border: 1px solid #334155; }
-        .card h3 { font-size: 15px; color: #cbd5e1; }
-        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px; color: white; background-color: #475569; }
-        .btn.active { background-color: #0284c7; box-shadow: 0 0 12px #0284c7; }
+        :root {
+            --bg-color: #0b132b;
+            --card-bg: #1c2541;
+            --card-border: #2a385b;
+            --accent-blue: #3a86ff;
+            --accent-gold: #ffb703;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --green-online: #10b981;
+            --red-offline: #ef4444;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); padding: 20px 15px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        
+        .container { width: 100%; max-width: 650px; }
+
+        /* Üst Header / Kartvizit Alanı */
+        .header-card { 
+            background: linear-gradient(135deg, #1c2541 0%, #0b132b 100%); 
+            border: 1px solid var(--card-border); 
+            border-radius: 20px; 
+            padding: 20px; 
+            margin-bottom: 25px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .user-info h1 { font-size: 20px; font-weight: 700; color: var(--text-main); letter-spacing: 0.5px; }
+        .user-info p { font-size: 13px; color: var(--accent-gold); margin-top: 4px; display: flex; align-items: center; gap: 6px; }
+        
+        .status-badge { 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            background: rgba(255, 255, 255, 0.05); 
+            padding: 8px 14px; 
+            border-radius: 30px; 
+            font-size: 12px; 
+            border: 1px solid var(--card-border);
+        }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background-color: var(--red-offline); }
+        .status-badge.online .status-dot { background-color: var(--green-online); box-shadow: 0 0 8px var(--green-online); }
+
+        /* Izgara Düzeni */
+        .grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
+            gap: 15px; 
+        }
+
+        /* Kanal Kartları */
+        .card { 
+            background-color: var(--card-bg); 
+            border: 1px solid var(--card-border); 
+            border-radius: 16px; 
+            padding: 18px 15px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 12px; 
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .card-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: var(--text-muted);
+            transition: 0.3s;
+        }
+
+        .card h3 { font-size: 14px; font-weight: 600; color: var(--text-main); text-align: center; }
+        .card span.ch-num { font-size: 11px; color: var(--text-muted); font-weight: 400; }
+
+        /* Buton Tasarımı */
+        .btn { 
+            width: 100%; 
+            padding: 10px; 
+            border: none; 
+            border-radius: 10px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: all 0.2s ease; 
+            font-size: 12px; 
+            color: var(--text-muted); 
+            background-color: rgba(255, 255, 255, 0.05); 
+            border: 1px solid var(--card-border);
+        }
+
+        /* Aktif Durum (AÇIK) */
+        .card.active {
+            border-color: var(--accent-blue);
+            background: linear-gradient(180deg, #1c2541 0%, #152238 100%);
+            box-shadow: 0 0 15px rgba(58, 134, 255, 0.2);
+        }
+        .card.active .card-icon {
+            background-color: var(--accent-blue);
+            color: #ffffff;
+            box-shadow: 0 0 12px var(--accent-blue);
+        }
+        .card.active .btn {
+            background-color: var(--accent-blue);
+            color: #ffffff;
+            border-color: var(--accent-blue);
+            box-shadow: 0 4px 10px rgba(58, 134, 255, 0.3);
+        }
+
+        footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 11px;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+        }
     </style>
 </head>
 <body>
-    <h1>🏠 Akıllı Ev Pano Kontrolü</h1>
-    <div id="status" class="status">Sunucuya Bağlanıyor...</div>
 
-    <div class="grid" id="controls"></div>
+    <div class="container">
+        <!-- Kurumsal Header -->
+        <div class="header-card">
+            <div class="user-info">
+                <h1>Rafet Demir</h1>
+                <p><i class="fa-solid fa-location-dot"></i> Çeşme Rezidans</p>
+            </div>
+            <div id="status-badge" class="status-badge">
+                <div class="status-dot"></div>
+                <span id="status-text">Bağlanıyor</span>
+            </div>
+        </div>
+
+        <!-- 12 Kanal Izgarası -->
+        <div class="grid" id="controls"></div>
+
+        <footer>
+            <p>© 2026 Çeşme Akıllı Ev Otomasyonu | All Rights Reserved</p>
+        </footer>
+    </div>
 
     <script>
-        // Ücretsiz Genel MQTT Broker (HiveMQ WebSockets Portu)
+        // ----------------------------------------------------
+        // KANAL İSİMLENDİRMELERİ VE İKONLAR (Burayı Değiştirebilirsiniz)
+        // ----------------------------------------------------
+        const channelConfig = [
+            { id: 1,  name: "Salon Işık",        icon: "fa-lightbulb" },
+            { id: 2,  name: "Mutfak Işık",       icon: "fa-utensils" },
+            { id: 3,  name: "Bahçe Aydınlatma",  icon: "fa-tree" },
+            { id: 4,  name: "Havuz Pompası",     icon: "fa-water" },
+            { id: 5,  name: "Havuz Işıkları",    icon: "fa-swimming-pool" },
+            { id: 6,  name: "Teras Lambası",     icon: "fa-umbrella-beach" },
+            { id: 7,  name: "Dış Garaj Kapısı",  icon: "fa-car" },
+            { id: 8,  name: "Giriş Kapısı",      icon: "fa-door-closed" },
+            { id: 9,  name: "Klima / İklim",     icon: "fa-snowflake" },
+            { id: 10, name: "Su Vanası",         icon: "fa-faucet" },
+            { id: 11, name: "Pano Yedek 1",      icon: "fa-bolt" },
+            { id: 12, name: "Pano Yedek 2",      icon: "fa-power-off" }
+        ];
+
+        // MQTT Ayarları
         const broker = "broker.hivemq.com";
         const port = 8000;
-        const clientID = "web_app_" + Math.random().toString(16).substr(2, 8);
-        const topicCmd = "ev/pano/komut";
-        const topicState = "ev/pano/durum";
+        const clientID = "cesme_rafet_demir_" + Math.random().toString(16).substr(2, 8);
+        const topicCmd = "ev/cesme/rafet_demir/komut";
+        const topicState = "ev/cesme/rafet_demir/durum";
 
         const client = new Paho.MQTT.Client(broker, port, clientID);
         const states = new Array(12).fill(false);
@@ -42,24 +193,25 @@
         client.connect({ onSuccess: onConnect, onFailure: onFailure });
 
         function onConnect() {
-            document.getElementById("status").innerText = "● Sistem Bağlandı (Canlı)";
-            document.getElementById("status").className = "status online";
+            const badge = document.getElementById("status-badge");
+            const text = document.getElementById("status-text");
+            badge.className = "status-badge online";
+            text.innerText = "Canlı Sinyal";
             client.subscribe(topicState);
         }
 
         function onFailure(err) {
-            document.getElementById("status").innerText = "Bağlantı Hatası: " + err.errorMessage;
+            document.getElementById("status-text").innerText = "Hata";
         }
 
         function onConnectionLost(responseObject) {
-            if (responseObject.errorCode !== 0) {
-                document.getElementById("status").innerText = "Bağlantı Kesildi!";
-                document.getElementById("status").className = "status";
-            }
+            const badge = document.getElementById("status-badge");
+            const text = document.getElementById("status-text");
+            badge.className = "status-badge";
+            text.innerText = "Bağlantı Yok";
         }
 
         function onMessageArrived(message) {
-            // ESP32'den gelen 12 kanallı durum bilgisi (Örn: "1:1" -> Kanal 1 AÇIK)
             const payload = message.payloadString.split(":");
             const ch = parseInt(payload[0]) - 1;
             const state = payload[1] === "1";
@@ -76,13 +228,14 @@
         }
 
         function updateUI(ch, state) {
+            const card = document.getElementById(`card-${ch}`);
             const btn = document.getElementById(`btn-${ch}`);
-            if (btn) {
+            if (card && btn) {
                 if (state) {
-                    btn.className = "btn active";
+                    card.className = "card active";
                     btn.innerText = "AÇIK";
                 } else {
-                    btn.className = "btn";
+                    card.className = "card";
                     btn.innerText = "KAPALI";
                 }
             }
@@ -91,14 +244,17 @@
         function renderGrid() {
             const container = document.getElementById('controls');
             let html = '';
-            for (let i = 1; i <= 12; i++) {
+            channelConfig.forEach(config => {
                 html += `
-                    <div class="card">
-                        <h3>Kanal ${i}</h3>
-                        <button id="btn-${i}" class="btn" onclick="toggleRelay(${i})">KAPALI</button>
+                    <div class="card" id="card-${config.id}">
+                        <div class="card-icon">
+                            <i class="fa-solid ${config.icon}"></i>
+                        </div>
+                        <h3>${config.name} <br><span class="ch-num">Kanal ${config.id}</span></h3>
+                        <button id="btn-${config.id}" class="btn" onclick="toggleRelay(${config.id})">KAPALI</button>
                     </div>
                 `;
-            }
+            });
             container.innerHTML = html;
         }
 
