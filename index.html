@@ -25,9 +25,73 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         body { background-color: var(--bg-color); color: var(--text-main); padding: 20px 15px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
         
-        .container { width: 100%; max-width: 650px; }
+        .container { width: 100%; max-width: 650px; display: none; } /* Giriş yapılana kadar gizli */
 
-        /* Üst Header / Kartvizit Alanı */
+        /* PIN Giriş Ekranı Tasarımı */
+        #auth-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 80vh;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .auth-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 30px 20px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+        }
+
+        .auth-card i.lock-icon {
+            font-size: 40px;
+            color: var(--accent-gold);
+            margin-bottom: 15px;
+        }
+
+        .auth-card h2 { font-size: 20px; margin-bottom: 5px; }
+        .auth-card p { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+
+        .pin-input {
+            width: 100%;
+            padding: 12px;
+            font-size: 22px;
+            letter-spacing: 10px;
+            text-align: center;
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            background: rgba(0, 0, 0, 0.2);
+            color: var(--accent-gold);
+            margin-bottom: 15px;
+            outline: none;
+        }
+
+        .auth-btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            border: none;
+            background: var(--accent-blue);
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .error-msg {
+            color: var(--red-offline);
+            font-size: 12px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        /* Ana Panel Tasarımları */
         .header-card { 
             background: linear-gradient(135deg, #1c2541 0%, #0b132b 100%); 
             border: 1px solid var(--card-border); 
@@ -40,7 +104,7 @@
             align-items: center;
         }
 
-        .user-info h1 { font-size: 20px; font-weight: 700; color: var(--text-main); letter-spacing: 0.5px; }
+        .user-info h1 { font-size: 20px; font-weight: 700; color: var(--text-main); }
         .user-info p { font-size: 13px; color: var(--accent-gold); margin-top: 4px; display: flex; align-items: center; gap: 6px; }
         
         .status-badge { 
@@ -56,14 +120,8 @@
         .status-dot { width: 8px; height: 8px; border-radius: 50%; background-color: var(--red-offline); }
         .status-badge.online .status-dot { background-color: var(--green-online); box-shadow: 0 0 8px var(--green-online); }
 
-        /* Izgara Düzeni */
-        .grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
-            gap: 15px; 
-        }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; }
 
-        /* Kanal Kartları */
         .card { 
             background-color: var(--card-bg); 
             border: 1px solid var(--card-border); 
@@ -93,7 +151,6 @@
         .card h3 { font-size: 14px; font-weight: 600; color: var(--text-main); text-align: center; }
         .card span.ch-num { font-size: 11px; color: var(--text-muted); font-weight: 400; }
 
-        /* Buton Tasarımı */
         .btn { 
             width: 100%; 
             padding: 10px; 
@@ -108,7 +165,6 @@
             border: 1px solid var(--card-border);
         }
 
-        /* Aktif Durum (AÇIK) */
         .card.active {
             border-color: var(--accent-blue);
             background: linear-gradient(180deg, #1c2541 0%, #152238 100%);
@@ -126,19 +182,25 @@
             box-shadow: 0 4px 10px rgba(58, 134, 255, 0.3);
         }
 
-        footer {
-            margin-top: 30px;
-            text-align: center;
-            font-size: 11px;
-            color: var(--text-muted);
-            letter-spacing: 0.5px;
-        }
+        footer { margin-top: 30px; text-align: center; font-size: 11px; color: var(--text-muted); }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <!-- Kurumsal Header -->
+    <!-- 🔒 1. GÜVENLİK GİRİŞ EKRANI -->
+    <div id="auth-screen">
+        <div class="auth-card">
+            <i class="fa-solid fa-shield-halved lock-icon"></i>
+            <h2>Rafet Demir Rezidans</h2>
+            <p>Akıllı Ev Paneline Erişmek İçin PIN Giriniz</p>
+            <input type="password" id="pin-input" class="pin-input" maxlength="4" placeholder="••••" pattern="\d*">
+            <button class="auth-btn" onclick="verifyPin()">Giriş Yap</button>
+            <div id="error-msg" class="error-msg">Hatalı PIN Kodu!</div>
+        </div>
+    </div>
+
+    <!-- 🏠 2. ANA KONTROL PANELİ (Giriş Yapılınca Açılır) -->
+    <div class="container" id="main-container">
         <div class="header-card">
             <div class="user-info">
                 <h1>Rafet Demir</h1>
@@ -150,18 +212,20 @@
             </div>
         </div>
 
-        <!-- 12 Kanal Izgarası -->
         <div class="grid" id="controls"></div>
 
         <footer>
-            <p>© 2026 Çeşme Akıllı Ev Otomasyonu | All Rights Reserved</p>
+            <p>© 2026 Çeşme Akıllı Ev Otomasyonu | Güvenli Bağlantı</p>
         </footer>
     </div>
 
     <script>
         // ----------------------------------------------------
-        // KANAL İSİMLENDİRMELERİ VE İKONLAR (Burayı Değiştirebilirsiniz)
+        // GÜVENLİK VE PIN AYARI (Varsayılan PIN: 1923)
         // ----------------------------------------------------
+        const CORRECT_PIN = "8890"; // Buraya istediğiniz 4 haneli PIN'i yazabilirsiniz!
+
+        // Kanal İsimlendirmeleri
         const channelConfig = [
             { id: 1,  name: "Salon Işık",        icon: "fa-lightbulb" },
             { id: 2,  name: "Mutfak Işık",       icon: "fa-utensils" },
@@ -177,20 +241,50 @@
             { id: 12, name: "Pano Yedek 2",      icon: "fa-power-off" }
         ];
 
-        // MQTT Ayarları
+        // PIN Doğrulama ve Cihaz Kaydı
+        function verifyPin() {
+            const input = document.getElementById("pin-input").value;
+            const error = document.getElementById("error-msg");
+
+            if (input === CORRECT_PIN) {
+                localStorage.setItem("cesme_auth_token", "AUTHORIZED_DEVICE_OK");
+                unlockApp();
+            } else {
+                error.style.display = "block";
+                document.getElementById("pin-input").value = "";
+            }
+        }
+
+        function checkAuth() {
+            const token = localStorage.getItem("cesme_auth_token");
+            if (token === "AUTHORIZED_DEVICE_OK") {
+                unlockApp();
+            }
+        }
+
+        function unlockApp() {
+            document.getElementById("auth-screen").style.display = "none";
+            document.getElementById("main-container").style.display = "block";
+            initMQTT();
+            renderGrid();
+        }
+
+        // MQTT Ayarları ve Bağlantısı
         const broker = "broker.hivemq.com";
         const port = 8000;
         const clientID = "cesme_rafet_demir_" + Math.random().toString(16).substr(2, 8);
         const topicCmd = "ev/cesme/rafet_demir/komut";
         const topicState = "ev/cesme/rafet_demir/durum";
 
-        const client = new Paho.MQTT.Client(broker, port, clientID);
+        let client;
         const states = new Array(12).fill(false);
 
-        client.onConnectionLost = onConnectionLost;
-        client.onMessageArrived = onMessageArrived;
-
-        client.connect({ onSuccess: onConnect, onFailure: onFailure });
+        function initMQTT() {
+            client = new Paho.MQTT.Client(broker, port, clientID);
+            client.onConnectionLost = onConnectionLost;
+            client.onMessageArrived = onMessageArrived;
+            client.connect({ onSuccess: onConnect, onFailure: onFailure });
+        }
 
         function onConnect() {
             const badge = document.getElementById("status-badge");
@@ -258,7 +352,8 @@
             container.innerHTML = html;
         }
 
-        renderGrid();
+        // Cihaz önceden yetkilendirilmiş mi kontrol et
+        checkAuth();
     </script>
 </body>
 </html>
