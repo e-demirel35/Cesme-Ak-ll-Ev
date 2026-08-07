@@ -216,6 +216,9 @@
             "10. Yedek 3", "11. Yedek 4", "12. Yedek 5"
         ];
 
+        // Yerel durum takibi (Varsayılan tüm kanallar kapalı)
+        let localStates = new Array(12).fill(false);
+
         // MQTT İstemcisini Başlat
         function initMQTT() {
             const clientId = "web_aksel_" + Math.random().toString(16).substr(2, 8);
@@ -250,12 +253,13 @@
             }
         }
 
-        // ESP8266'dan Durum Mesajı Geldiğinde Çalışır
+        // ESP8266'dan Canlı Durum Geldiğinde Butonları Güncelle
         function onMessageArrived(message) {
             try {
                 const data = JSON.parse(message.payloadString);
                 if (data.states && Array.isArray(data.states)) {
-                    renderButtons(data.states);
+                    localStates = data.states;
+                    renderButtons(localStates);
                 }
             } catch (e) {
                 console.log("JSON Ayrıştırma Hatası: ", e);
@@ -263,7 +267,7 @@
         }
 
         window.onload = function() {
-            initMQTT();
+            setTimeout(initMQTT, 500);
         };
 
         function login() {
@@ -282,15 +286,16 @@
 
             currentPin = pin;
 
-            // ESP8266'ya mevcut durumları almak için istek atıyoruz
+            // Ekranı panele geçir ve butonları hemen ekrana çiz
+            document.getElementById("login-screen").style.display = "none";
+            document.getElementById("main-panel").style.display = "block";
+            renderButtons(localStates);
+
+            // ESP8266'ya mevcut durumlarını bildirmesi için istek gönder
             const payload = JSON.stringify({ pin: currentPin, request: "status" });
             const message = new Paho.MQTT.Message(payload);
             message.destinationName = TOPIC_COMMAND;
             mqttClient.send(message);
-
-            // Arayüzü Panele Geçir
-            document.getElementById("login-screen").style.display = "none";
-            document.getElementById("main-panel").style.display = "block";
         }
 
         function renderButtons(states) {
@@ -314,6 +319,11 @@
         function toggleRelay(ch) {
             if (!isConnected) return;
 
+            // Basıldığı an arayüzde anlık görünüm güncellemesi
+            localStates[ch] = !localStates[ch];
+            renderButtons(localStates);
+
+            // ESP8266'ya komut gönder
             const payload = JSON.stringify({
                 pin: currentPin,
                 ch: ch
