@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AKSEL AKILLI EV SİSTEMLERİ</title>
+    <!-- MQTT WebSocket Kütüphanesi -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -177,22 +179,20 @@
         <h2>RAFET DEMİR</h2>
     </div>
 
-    <!-- GİRİŞ VE SUNUCU AYARLARI EKRANI -->
+    <!-- GİRİŞ EKRANI -->
     <div id="login-screen">
         <h3 style="margin-top:0; color:#cbd5e1;">Sistem Bağlantısı</h3>
         
-        <!-- İnternet Üzerinden Bağlantı İçin ESP Adresi (Yerel IP veya Dış Domain/IP) -->
-        <input type="text" id="serverUrl" class="input-field" placeholder="Örn: http://akselhome.duckdns.org veya IP">
         <input type="password" id="pinInput" class="input-field pin-input" maxlength="4" placeholder="••••" inputmode="numeric">
         
         <button class="btn-login" onclick="login()">SİSTEME BAĞLAN</button>
         <div id="error" class="error-msg">Bağlantı Başarısız veya Şifre Hatalı!</div>
     </div>
 
-    <!-- KONTROL PANELSİ -->
+    <!-- KONTROL PANELİ -->
     <div id="main-panel">
         <div class="status-bar">
-            <span id="conn-status" style="color: var(--success);">● Bağlı</span>
+            <span id="conn-status" style="color: var(--success);">● Bulut Sunucusuna Bağlı</span>
             <button onclick="logout()" style="background:none; border:none; color:#94a3b8; cursor:pointer; font-size:12px;">[Çıkış Yap]</button>
         </div>
         <div class="grid" id="button-grid"></div>
@@ -200,7 +200,14 @@
 
     <script>
         let currentPin = "";
-        let baseUrl = "";
+        let mqttClient = null;
+        let isConnected = false;
+
+        // MQTT Yapılandırması
+        const MQTT_BROKER = "broker.hivemq.com";
+        const MQTT_PORT = 8884; // WebSocket WSS portu
+        const TOPIC_COMMAND = "cesme/akilliev/command";
+        const TOPIC_STATUS  = "cesme/akilliev/status";
 
         const channelNames = [
             "1. Havuz Işık", "2. Havuz Jakuzi", "3. Havuz Kobra",
@@ -209,43 +216,81 @@
             "10. Yedek 3", "11. Yedek 4", "12. Yedek 5"
         ];
 
-        // Sayfa açıldığında kaydedilmiş sunucu adresini hatırla
-        window.onload = function() {
-            if(localStorage.getItem("esp_url")) {
-                document.getElementById("serverUrl").value = localStorage.getItem("esp_url");
+        // MQTT İstemcisini Başlat
+        function initMQTT() {
+            const clientId = "web_aksel_" + Math.random().toString(16).substr(2, 8);
+            mqttClient = new Paho.MQTT.Client(MQTT_BROKER, MQTT_PORT, clientId);
+
+            mqttClient.onConnectionLost = onConnectionLost;
+            mqttClient.onMessageArrived = onMessageArrived;
+
+            mqttClient.connect({
+                useSSL: true,
+                onSuccess: onConnectSuccess,
+                onFailure: onConnectFailure
+            });
+        }
+
+        function onConnectSuccess() {
+            isConnected = true;
+            mqttClient.subscribe(TOPIC_STATUS);
+            console.log("MQTT Bulut Sunucusuna Bağlanıldı!");
+        }
+
+        function onConnectFailure(err) {
+            isConnected = false;
+            console.log("MQTT Bağlantı Hatası: ", err);
+            showError("Bulut Sunucusuna Bağlanılamadı!");
+        }
+
+        function onConnectionLost(responseObject) {
+            if (responseObject.errorCode !== 0) {
+                console.log("Bağlantı Koparıldı: " + responseObject.errorMessage);
+                setTimeout(initMQTT, 3000); // Otomatik yeniden bağlan
             }
+        }
+
+        // ESP8266'dan Durum Mesajı Geldiğinde Çalışır
+        function onMessageArrived(message) {
+            try {
+                const data = JSON.parse(message.payloadString);
+                if (data.states && Array.isArray(data.states)) {
+                    renderButtons(data.states);
+                }
+            } catch (e) {
+                console.log("JSON Ayrıştırma Hatası: ", e);
+            }
+        }
+
+        window.onload = function() {
+            initMQTT();
         };
 
         function login() {
-            const urlInput = document.getElementById("serverUrl").value.trim();
             const pin = document.getElementById("pinInput").value;
-            
-            // Format kontrolü (http:// ekle)
-            baseUrl = urlInput.startsWith("http") ? urlInput : "http://" + urlInput;
-            
-            // Sonundaki slash'i temizle
-            if (baseUrl.endsWith("/")) baseUrl = baseUrl.slice(0, -1);
-
             document.getElementById("error").style.display = "none";
 
-            // Dış ağ istekleri için fetch
-            fetch(`${baseUrl}/login?pin=${pin}`, { method: 'GET', mode: 'cors' })
-            .then(res => res.json())
-            .then(data => {
-                if(data.status === "OK") {
-                    currentPin = pin;
-                    localStorage.setItem("esp_url", urlInput); // Adresi hafızaya kaydet
-                    
-                    document.getElementById("login-screen").style.display = "none";
-                    document.getElementById("main-panel").style.display = "block";
-                    renderButtons(data.states);
-                } else {
-                    showError("Hatalı PIN Şifresi!");
-                }
-            })
-            .catch(err => {
-                showError("ESP8266 Sunucusuna Ulaşılamadı!");
-            });
+            if (!isConnected) {
+                showError("Bulut Sunucusu Bağlantısı Bekleniyor...");
+                return;
+            }
+
+            if (pin.length < 4) {
+                showError("Lütfen 4 Haneli PIN Girin!");
+                return;
+            }
+
+            currentPin = pin;
+
+            // ESP8266'ya mevcut durumları almak için istek atıyoruz
+            const payload = JSON.stringify({ pin: currentPin, request: "status" });
+            const message = new Paho.MQTT.Message(payload);
+            message.destinationName = TOPIC_COMMAND;
+            mqttClient.send(message);
+
+            // Arayüzü Panele Geçir
+            document.getElementById("login-screen").style.display = "none";
+            document.getElementById("main-panel").style.display = "block";
         }
 
         function renderButtons(states) {
@@ -267,20 +312,16 @@
         }
 
         function toggleRelay(ch) {
-            fetch(`${baseUrl}/toggle?ch=${ch}&pin=${currentPin}`, { method: 'GET', mode: 'cors' })
-            .then(res => res.json())
-            .then(data => {
-                if(data.status === "OK") {
-                    const btn = document.getElementById(`btn-${ch}`);
-                    if(data.newState) {
-                        btn.className = "toggle-btn btn-on";
-                        btn.innerText = "AÇIK";
-                    } else {
-                        btn.className = "toggle-btn btn-off";
-                        btn.innerText = "KAPALI";
-                    }
-                }
+            if (!isConnected) return;
+
+            const payload = JSON.stringify({
+                pin: currentPin,
+                ch: ch
             });
+
+            const message = new Paho.MQTT.Message(payload);
+            message.destinationName = TOPIC_COMMAND;
+            mqttClient.send(message);
         }
 
         function showError(msg) {
@@ -292,6 +333,7 @@
         function logout() {
             document.getElementById("main-panel").style.display = "none";
             document.getElementById("login-screen").style.display = "block";
+            document.getElementById("pinInput").value = "";
         }
     </script>
 </body>
