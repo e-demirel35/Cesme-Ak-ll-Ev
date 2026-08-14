@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Akıllı Ev Kontrol Merkezi</title>
     <!-- FontAwesome İkon Kütüphanesi -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -11,7 +11,7 @@
     <style>
         :root {
             --bg-color: #0f172a;
-            --card-bg: rgba(30, 41, 59, 0.7);
+            --card-bg: rgba(30, 41, 59, 0.75);
             --card-border: rgba(255, 255, 255, 0.08);
             --primary: #38bdf8;
             --primary-glow: rgba(56, 189, 248, 0.35);
@@ -27,6 +27,7 @@
             padding: 0;
             font-family: 'Plus Jakarta Sans', sans-serif;
             user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
@@ -38,8 +39,9 @@
             color: var(--text-main);
             display: flex;
             justify-content: center;
-            align-items: center;
-            padding: 20px;
+            align-items: flex-start;
+            padding: 15px;
+            overflow-x: hidden;
         }
 
         /* --- ŞİFRE EKRANI (LOCK OVERLAY) --- */
@@ -47,16 +49,18 @@
             position: fixed;
             top: 0;
             left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(15, 23, 42, 0.95);
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.96);
             backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             z-index: 9999;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            transition: opacity 0.5s ease, visibility 0.5s ease;
+            padding: 20px;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
         }
 
         #lock-screen.hidden {
@@ -69,43 +73,43 @@
             background: var(--card-bg);
             border: 1px solid var(--card-border);
             border-radius: 24px;
-            padding: 35px 30px;
+            padding: 25px 20px;
             text-align: center;
             box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            max-width: 360px;
             width: 100%;
+            max-width: 340px;
         }
 
         .lock-icon {
-            font-size: 42px;
+            font-size: 36px;
             color: var(--primary);
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             text-shadow: 0 0 15px var(--primary-glow);
         }
 
         .lock-title {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 700;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
         }
 
         .lock-subtitle {
-            font-size: 13px;
+            font-size: 12px;
             color: var(--text-muted);
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }
 
         /* PIN Noktaları */
         .pin-dots {
             display: flex;
             justify-content: center;
-            gap: 15px;
-            margin-bottom: 25px;
+            gap: 12px;
+            margin-bottom: 20px;
         }
 
         .pin-dot {
-            width: 16px;
-            height: 16px;
+            width: 14px;
+            height: 14px;
             border-radius: 50%;
             border: 2px solid var(--text-muted);
             transition: 0.2s ease;
@@ -127,77 +131,98 @@
         .keypad {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
+            gap: 10px;
         }
 
         .key-btn {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--card-border);
-            border-radius: 16px;
+            border-radius: 14px;
             color: var(--text-main);
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 600;
-            padding: 16px 0;
+            padding: 14px 0;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.15s ease;
         }
 
         .key-btn:active {
             transform: scale(0.92);
-            background: rgba(56, 189, 248, 0.2);
+            background: rgba(56, 189, 248, 0.25);
             border-color: var(--primary);
         }
 
         /* --- AKILLI EV DASHBOARD --- */
         .container {
             width: 100%;
-            max-width: 1000px;
+            max-width: 900px;
+            margin: 0 auto;
         }
 
         /* Header */
         header {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
             background: var(--card-bg);
             border: 1px solid var(--card-border);
-            padding: 20px 25px;
+            padding: 18px 20px;
             border-radius: 20px;
             backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
         }
 
         .header-title h1 {
-            font-size: 22px;
+            font-size: 18px;
             font-weight: 700;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
 
         .header-title p {
-            font-size: 13px;
+            font-size: 12px;
             color: var(--text-muted);
-            margin-top: 3px;
+            margin-top: 2px;
+        }
+
+        .header-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            border-top: 1px solid var(--card-border);
+            padding-top: 12px;
         }
 
         .ip-settings {
             display: flex;
             align-items: center;
-            gap: 10px;
-            background: rgba(0, 0, 0, 0.2);
-            padding: 8px 12px;
-            border-radius: 12px;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.25);
+            padding: 6px 12px;
+            border-radius: 10px;
             border: 1px solid var(--card-border);
+            flex: 1;
+            max-width: 220px;
         }
 
         .ip-settings input {
             background: transparent;
             border: none;
             color: var(--primary);
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
-            width: 120px;
+            width: 100%;
             outline: none;
         }
 
@@ -205,87 +230,88 @@
             display: flex;
             align-items: center;
             gap: 6px;
-            font-size: 12px;
-            padding: 6px 12px;
+            font-size: 11px;
+            padding: 6px 10px;
             border-radius: 20px;
             background: rgba(34, 197, 94, 0.1);
             color: var(--success);
             border: 1px solid rgba(34, 197, 94, 0.2);
+            white-space: nowrap;
         }
 
         .status-dot {
-            width: 8px;
-            height: 8px;
+            width: 7px;
+            height: 7px;
             border-radius: 50%;
             background: var(--success);
-            box-shadow: 0 0 8px var(--success);
+            box-shadow: 0 0 6px var(--success);
         }
 
         /* Toplu Buton Grubu */
         .global-controls {
             display: flex;
-            gap: 15px;
-            margin-bottom: 25px;
+            gap: 10px;
+            margin-bottom: 20px;
         }
 
         .btn-global {
             flex: 1;
-            padding: 14px;
-            border-radius: 16px;
+            padding: 12px 10px;
+            border-radius: 14px;
             border: none;
             font-weight: 700;
-            font-size: 14px;
+            font-size: 13px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            transition: all 0.2s ease;
+            gap: 8px;
+            transition: all 0.15s ease;
         }
 
         .btn-all-on {
             background: linear-gradient(135deg, #0284c7, #38bdf8);
             color: #fff;
-            box-shadow: 0 4px 15px rgba(56, 189, 248, 0.25);
+            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.2);
         }
 
         .btn-all-off {
             background: linear-gradient(135deg, #e11d48, #f43f5e);
             color: #fff;
-            box-shadow: 0 4px 15px rgba(244, 63, 94, 0.25);
+            box-shadow: 0 4px 12px rgba(244, 63, 94, 0.2);
         }
 
         .btn-global:active {
-            transform: scale(0.98);
+            transform: scale(0.96);
         }
 
-        /* Grid Arayüzü */
+        /* Mobil Uyumlu Grid Arayüzü */
         .relay-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            width: 100%;
         }
 
-        /* Akıllı Kart Tasarımı */
+        /* Mobil Kart Tasarımı */
         .card {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
-            border-radius: 20px;
-            padding: 20px;
+            border-radius: 16px;
+            padding: 14px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            height: 160px;
+            height: 135px;
             backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
+            -webkit-backdrop-filter: blur(10px);
+            transition: all 0.25s ease;
         }
 
         .card.active {
-            border-color: rgba(56, 189, 248, 0.4);
-            background: rgba(30, 41, 59, 0.9);
-            box-shadow: 0 10px 25px -5px rgba(56, 189, 248, 0.15);
+            border-color: rgba(56, 189, 248, 0.5);
+            background: rgba(30, 41, 59, 0.95);
+            box-shadow: 0 8px 20px -5px rgba(56, 189, 248, 0.2);
         }
 
         .card-header {
@@ -295,42 +321,44 @@
         }
 
         .card-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: 14px;
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
             background: rgba(255, 255, 255, 0.05);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            font-size: 16px;
             color: var(--text-muted);
-            transition: all 0.3s ease;
+            transition: all 0.25s ease;
         }
 
         .card.active .card-icon {
             background: var(--primary);
             color: #0f172a;
-            box-shadow: 0 0 15px var(--primary-glow);
+            box-shadow: 0 0 12px var(--primary-glow);
         }
 
         .card-title {
-            font-size: 15px;
+            font-size: 13px;
             font-weight: 700;
             color: var(--text-main);
-            margin-top: 15px;
+            margin-top: 10px;
+            line-height: 1.2;
         }
 
         .card-sub {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-muted);
+            margin-top: 3px;
         }
 
         /* Toggle Switch */
         .switch {
             position: relative;
             display: inline-block;
-            width: 48px;
-            height: 26px;
+            width: 44px;
+            height: 24px;
         }
 
         .switch input {
@@ -344,19 +372,19 @@
             cursor: pointer;
             top: 0; left: 0; right: 0; bottom: 0;
             background-color: #334155;
-            transition: .3s ease;
+            transition: .25s ease;
             border-radius: 34px;
         }
 
         .slider:before {
             position: absolute;
             content: "";
-            height: 20px;
-            width: 20px;
+            height: 18px;
+            width: 18px;
             left: 3px;
             bottom: 3px;
             background-color: white;
-            transition: .3s ease;
+            transition: .25s ease;
             border-radius: 50%;
         }
 
@@ -365,24 +393,45 @@
         }
 
         input:checked + .slider:before {
-            transform: translateX(22px);
+            transform: translateX(20px);
         }
 
         /* Animasyon */
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
-            20%, 60% { transform: translateX(-8px); }
-            40%, 80% { transform: translateX(8px); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
         }
 
-        @media (max-width: 600px) {
+        /* Masaüstü Ekranlar İçin İyileştirme */
+        @media (min-width: 600px) {
+            body { padding: 30px; }
             header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 15px;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                padding: 20px 25px;
+            }
+            .header-controls {
+                border-top: none;
+                padding-top: 0;
+                width: auto;
             }
             .relay-grid {
-                grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 18px;
+            }
+            .card {
+                height: 150px;
+                padding: 18px;
+            }
+            .card-icon {
+                width: 44px;
+                height: 44px;
+                font-size: 18px;
+            }
+            .card-title {
+                font-size: 15px;
             }
         }
     </style>
@@ -396,7 +445,7 @@
                 <i class="fa-solid fa-shield-halved"></i>
             </div>
             <div class="lock-title">Giriş Doğrulaması</div>
-            <div class="lock-subtitle">Akıllı Ev Kontrol Paneli için 4 Haneli Şifrenizi Girin</div>
+            <div class="lock-subtitle">4 Haneli Şifrenizi Girin</div>
             
             <div class="pin-dots">
                 <div class="pin-dot" id="dot-0"></div>
@@ -415,9 +464,9 @@
                 <button class="key-btn" onclick="pressKey('7')">7</button>
                 <button class="key-btn" onclick="pressKey('8')">8</button>
                 <button class="key-btn" onclick="pressKey('9')">9</button>
-                <button class="key-btn" onclick="clearPin()"><i class="fa-solid fa-rotate-left" style="font-size:16px;"></i></button>
+                <button class="key-btn" onclick="clearPin()"><i class="fa-solid fa-rotate-left"></i></button>
                 <button class="key-btn" onclick="pressKey('0')">0</button>
-                <button class="key-btn" onclick="backspace()"><i class="fa-solid fa-delete-left" style="font-size:16px;"></i></button>
+                <button class="key-btn" onclick="backspace()"><i class="fa-solid fa-delete-left"></i></button>
             </div>
         </div>
     </div>
@@ -425,13 +474,15 @@
     <!-- MAIN DASHBOARD -->
     <div class="container">
         <header>
-            <div class="header-title">
-                <h1><i class="fa-solid fa-house-signal" style="color:var(--primary);"></i> Akıllı Ev Sistemi</h1>
-                <p>Havuz ve Bahçe Aydınlatma Kontrolü</p>
+            <div class="header-top">
+                <div class="header-title">
+                    <h1><i class="fa-solid fa-house-signal" style="color:var(--primary);"></i> Akıllı Ev</h1>
+                    <p>Havuz & Bahçe Kontrolü</p>
+                </div>
             </div>
-            <div style="display:flex; gap:12px; align-items:center;">
-                <div class="ip-settings" title="ESP8266 Cihazınızın Yerel IP Adresi">
-                    <i class="fa-solid fa-network-wired" style="color:var(--text-muted); font-size:12px;"></i>
+            <div class="header-controls">
+                <div class="ip-settings" title="ESP8266 IP Adresi">
+                    <i class="fa-solid fa-network-wired" style="color:var(--text-muted); font-size:11px;"></i>
                     <input type="text" id="esp-ip" value="192.168.1.100" onchange="saveIp(this.value)">
                 </div>
                 <div class="status-badge">
@@ -443,20 +494,19 @@
 
         <div class="global-controls">
             <button class="btn-global btn-all-on" onclick="setAllRelays(1)">
-                <i class="fa-solid fa-power-off"></i> Tümünü Çalıştır
+                <i class="fa-solid fa-power-off"></i> Hepsini Aç
             </button>
             <button class="btn-global btn-all-off" onclick="setAllRelays(0)">
-                <i class="fa-solid fa-plug-circle-xmark"></i> Tümünü Kapat
+                <i class="fa-solid fa-plug-circle-xmark"></i> Hepsini Kapat
             </button>
         </div>
 
         <div class="relay-grid" id="grid-container">
-            <!-- JavaScript 7 aktif kanalı buraya dinamik oluşturacak -->
+            <!-- JavaScript 7 aktif kanalı buraya oluşturacak -->
         </div>
     </div>
 
     <script>
-        // 7 Aktif Kanal Tanımlamaları ve İkonları
         const channels = [
             { id: 0, title: "Havuz Işıkları", icon: "fa-solid fa-water-ladder" },
             { id: 1, title: "Havuz Jakuzisi", icon: "fa-solid fa-hot-tub-person" },
@@ -479,7 +529,7 @@
             syncStatus();
         }
 
-        // --- PIN MANTIĞI ---
+        // PIN KONTROLÜ
         function pressKey(num) {
             if (enteredPin.length < 4) {
                 enteredPin += num;
@@ -516,7 +566,7 @@
                 document.getElementById('lock-screen').classList.add('hidden');
                 initGrid();
                 syncStatus();
-                setInterval(syncStatus, 3000); // 3 saniyede bir durumu eşitle
+                setInterval(syncStatus, 3000);
             } else {
                 for (let i = 0; i < 4; i++) {
                     document.getElementById(`dot-${i}`).classList.add('error');
@@ -527,7 +577,7 @@
             }
         }
 
-        // --- ARAYÜZ VE KONTROL MANTIĞI ---
+        // KONTROL VE İSTEKLER
         function initGrid() {
             const container = document.getElementById('grid-container');
             container.innerHTML = '';
@@ -557,7 +607,7 @@
             updateCardUI(id, chk.checked);
 
             fetch(`http://${espIp}/toggle?id=${id}&state=${state}`)
-                .catch(err => console.log("ESP Bağlantı hatası:", err));
+                .catch(err => console.log("ESP İletişim Hatası:", err));
         }
 
         function setAllRelays(state) {
@@ -570,7 +620,7 @@
             });
 
             fetch(`http://${espIp}/all?state=${state}`)
-                .catch(err => console.log("ESP Bağlantı hatası:", err));
+                .catch(err => console.log("ESP İletişim Hatası:", err));
         }
 
         function updateCardUI(id, isActive) {
@@ -578,7 +628,7 @@
             const sub = document.getElementById(`sub-${id}`);
             if (isActive) {
                 card.classList.add('active');
-                sub.innerText = "Çalışıyor";
+                sub.innerText = "Açık";
                 sub.style.color = "var(--primary)";
             } else {
                 card.classList.remove('active');
@@ -605,57 +655,3 @@
     </script>
 </body>
 </html>
-```eof
-
----
-
-### ⚠️ ÖNEMLİ: ESP8266 C++ Kodunuzda Yapmanız Gereken Güncelleme (CORS Desteği)
-
-GitHub Pages `https://` protokolü üzerinden çalışacağı ve doğrudan evinizdeki yerel IP adresine (`[http://192.168.1.](http://192.168.1.)x`) istek atacağı için tarayıcının istekleri engellememesi adına **ESP8266 kodunuzdaki handler fonksiyonlarına CORS başlıkları eklenmelidir.**
-
-Aşağıdaki fonksiyonları ESP8266 C++ kodunuzla değiştirin:
-
-```cpp
-void sendCORS() {
-  server.sendHeader("Access-Control-Allow-Origin", "*");
-  server.sendHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  server.sendHeader("Access-Control-Allow-Headers", "*");
-}
-
-void handleToggle() {
-  sendCORS(); // CORS İzni
-  if (server.hasArg("id") && server.hasArg("state")) {
-    int id = server.arg("id").toInt();
-    int state = server.arg("state").toInt();
-    if (id >= 0 && id < 16) {
-      bool isRequestedOn = (state == 1);
-      roleDurumlari[id] = isRequestedOn;
-      mcpWritePin(id, isRequestedOn ? LOW : HIGH);
-    }
-  }
-  server.send(200, "text/plain", "OK");
-}
-
-void handleAll() {
-  sendCORS(); // CORS İzni
-  if (server.hasArg("state")) {
-    int state = server.arg("state").toInt();
-    bool isRequestedOn = (state == 1);
-    for (int i = 0; i < 16; i++) {
-      roleDurumlari[i] = isRequestedOn;
-    }
-    mcpWriteAll(isRequestedOn);
-  }
-  server.send(200, "text/plain", "OK");
-}
-
-void handleStatus() {
-  sendCORS(); // CORS İzni
-  String json = "{\"states\":[";
-  for (int i = 0; i < 16; i++) {
-    json += roleDurumlari[i] ? "1" : "0";
-    if (i < 15) json += ",";
-  }
-  json += "]}";
-  server.send(200, "application/json", json);
-}
