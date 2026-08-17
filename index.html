@@ -3,210 +3,256 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Akıllı Ev - Havuz & Bahçe Kontrolü</title>
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Firebase App & Database SDKs (v9 Compat Mode) -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <title>Akıllı Bahçe & Havuz Kontrol Paneli</title>
   <style>
     body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background-color: #0f172a;
       color: #f8fafc;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      margin: 0;
+      min-height: 100vh;
     }
-    .glass-card {
-      background: rgba(30, 41, 59, 0.7);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+    h1 {
+      margin-bottom: 20px;
+      color: #38bdf8;
+      text-align: center;
     }
-    .toggle-checkbox:checked {
-      right: 0;
-      border-color: #38bdf8;
+
+    /* ŞİFRE GİRİŞ EKRANI STİLLERİ */
+    .login-card {
+      background-color: #1e293b;
+      border-radius: 12px;
+      padding: 25px;
+      width: 100%;
+      max-width: 360px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+      border: 1px solid #334155;
+      text-align: center;
+      margin-top: 50px;
     }
-    .toggle-checkbox:checked + .toggle-label {
+    .login-card input[type="password"] {
+      width: 100%;
+      padding: 12px;
+      margin: 15px 0;
+      border-radius: 8px;
+      border: 1px solid #475569;
+      background-color: #0f172a;
+      color: #ffffff;
+      font-size: 1.1rem;
+      text-align: center;
+      box-sizing: border-box;
+    }
+    .login-card button {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
       background-color: #0284c7;
+      color: white;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .login-card button:hover {
+      background-color: #0369a1;
+    }
+    .error-msg {
+      color: #ef4444;
+      font-size: 0.85rem;
+      margin-top: 10px;
+      display: none;
+    }
+
+    /* KONTROL PANELİ KART STİLLERİ */
+    .grid-container {
+      display: none; /* Şifre girilene kadar gizli */
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 15px;
+      width: 100%;
+      max-width: 900px;
+    }
+    .card {
+      background-color: #1e293b;
+      border-radius: 12px;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+      border: 1px solid #334155;
+    }
+    .card h3 {
+      margin: 0 0 10px 0;
+      font-size: 1.1rem;
+      text-align: center;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 34px;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #475569;
+      transition: .3s;
+      border-radius: 34px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 26px;
+      width: 26px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: #22c55e;
+    }
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+    .status {
+      margin-top: 8px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: #94a3b8;
     }
   </style>
+
+  <!-- Firebase JS SDK (v8) -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 </head>
-<body class="min-h-screen pb-12">
-  <div class="max-w-4xl mx-auto px-4 py-6">
-    
-    <!-- HEADER SECTION -->
-    <div class="glass-card rounded-2xl p-6 mb-6 shadow-xl">
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <div class="flex items-center gap-2">
-            <i class="fa-solid fa-house-signal text-sky-400 text-2xl"></i>
-            <h1 class="text-2xl font-bold text-white">Akıllı Ev</h1>
-          </div>
-          <p class="text-slate-400 text-sm mt-1">Havuz & Bahçe Kontrol Paneli</p>
-        </div>
-        
-        <!-- DEVICE STATUS BADGE -->
-        <div class="flex items-center gap-3 bg-slate-800/80 px-4 py-2 rounded-xl border border-slate-700/50">
-          <div class="flex flex-col">
-            <span class="text-xs text-slate-400">ESP8266 Durumu</span>
-            <span id="esp-ip" class="text-xs font-mono text-slate-300">İp: Yükleniyor...</span>
-          </div>
-          <div id="status-indicator" class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 text-xs font-medium">
-            <span class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></span>
-            <span id="status-text">Bağlanıyor</span>
-          </div>
-        </div>
-      </div>
-    </div>
+<body>
 
-    <!-- MASTER CONTROLS -->
-    <div class="grid grid-cols-2 gap-4 mb-8">
-      <button onclick="setAllRelays(true)" class="flex items-center justify-center gap-2 py-4 px-6 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-semibold rounded-2xl shadow-lg shadow-sky-500/20 active:scale-95 transition-all">
-        <i class="fa-solid fa-power-off text-lg"></i>
-        <span>Hepsini Aç</span>
-      </button>
-      <button onclick="setAllRelays(false)" class="flex items-center justify-center gap-2 py-4 px-6 bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white font-semibold rounded-2xl shadow-lg shadow-rose-500/20 active:scale-95 transition-all">
-        <i class="fa-solid fa-plug-circle-xmark text-lg"></i>
-        <span>Hepsini Kapat</span>
-      </button>
-    </div>
+  <h1>🏡 Akıllı Bahçe & Havuz Kontrolü</h1>
 
-    <!-- RELAYS GRID (16 CARDS) -->
-    <div id="relays-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <!-- Dynamically Rendered via JavaScript -->
-    </div>
-
+  <!-- 1. ŞİFRE GİRİŞ EKRANI -->
+  <div class="login-card" id="login-box">
+    <h3>🔒 Erişim Şifresi</h3>
+    <input type="password" id="password-input" placeholder="Şifrenizi girin..." onkeypress="handleKeyPress(event)">
+    <button onclick="checkPassword()">Giriş Yap</button>
+    <div class="error-msg" id="error-message">Hatalı şifre! Tekrar deneyin.</div>
   </div>
 
-  <script>
-    // 1. FIREBASE CONFIGURATION
-    const firebaseConfig = {
-      databaseURL: "https://aksel-9de23-default-rtdb.firebaseio.com/"
-    };
+  <!-- 2. RÖLE KONTROL PANELİ -->
+  <div class="grid-container" id="relay-container"></div>
 
-    // Initialize Firebase
+  <script>
+    // --- GÜNCELLENMİŞ ERİŞİM ŞİFRESİ ---
+    const KONTROL_SIFRESI = "1963";
+
+    // --- FIREBASE BAĞLANTI AYARLARI ---
+    const firebaseConfig = {
+      databaseURL: "https://aksel-9de23-default-rtdb.firebaseio.com"
+    };
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // Default Icon Mapping for Relays
-    const relayIcons = [
-      "fa-water",           // 0: Havuz Işıkları
-      "fa-hot-tub-person",   // 1: Havuz Jakuzisi
-      "fa-water-ladder",    // 2: Havuz Kobra
-      "fa-stairs",          // 3: Merdiven Işıkları
-      "fa-leaf",            // 4: Bahçe Sol LED
-      "fa-tree",            // 5: Bahçe Sağ LED
-      "fa-lightbulb",       // 6: Bahçe Karpuz Işıklar
-      "fa-bolt",            // 7: Röle 8
-      "fa-bolt",            // 8: Röle 9
-      "fa-bolt",            // 9: Röle 10
-      "fa-bolt",            // 10: Röle 11
-      "fa-bolt",            // 11: Röle 12
-      "fa-bolt",            // 12: Röle 13
-      "fa-bolt",            // 13: Röle 14
-      "fa-bolt",            // 14: Röle 15
-      "fa-bolt"             // 15: Röle 16
+    // --- RÖLE İSİMLENDİRME TABLOSU ---
+    const relayNames = [
+      "Havuz Işık",         // Röle 1
+      "Havuz Jakuzi",       // Röle 2
+      "Havuz Kobra",        // Röle 3
+      "Merdiven Işık",      // Röle 4
+      "Bahçe Led Sol",      // Röle 5
+      "Bahçe Led Sağ",      // Röle 6
+      "Bahçe Karpuz Işık",  // Röle 7
+      "Röle 8",
+      "Röle 9",
+      "Röle 10",
+      "Röle 11",
+      "Röle 12",
+      "Röle 13",
+      "Röle 14",
+      "Röle 15",
+      "Röle 16"
     ];
 
-    // Render Relay Cards Container
-    const container = document.getElementById('relays-container');
-    
-    function createRelayCard(id, name, state) {
-      const icon = relayIcons[id] || "fa-bolt";
-      const card = document.createElement('div');
-      card.className = `glass-card rounded-2xl p-5 transition-all duration-300 border ${state ? 'border-sky-500/40 shadow-lg shadow-sky-500/10' : 'border-slate-800'}`;
-      card.id = `relay-card-${id}`;
-
-      card.innerHTML = `
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-3.5">
-            <div id="icon-box-${id}" class="w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${state ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30' : 'bg-slate-800 text-slate-500'}">
-              <i class="fa-solid ${icon} text-xl"></i>
-            </div>
-            <div>
-              <h3 class="font-semibold text-white text-base">${name}</h3>
-              <p id="status-text-${id}" class="text-xs mt-0.5 ${state ? 'text-sky-400 font-medium' : 'text-slate-500'}">
-                ${state ? 'Açık' : 'Kapalı'}
-              </p>
-            </div>
-          </div>
-          <label class="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" id="toggle-${id}" onchange="toggleRelay(${id}, this.checked)" ${state ? 'checked' : ''} class="sr-only peer">
-            <div class="w-14 h-8 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-sky-500"></div>
-          </label>
-        </div>
-      `;
-      return card;
-    }
-
-    // Initialize initial cards
-    for (let i = 0; i < 16; i++) {
-      container.appendChild(createRelayCard(i, `Röle ${i + 1}`, false));
-    }
-
-    // LISTEN TO FIREBASE REALTIME UPDATES
-    // 1. Device Info (IP & Online status)
-    database.ref('device_info').on('value', (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        document.getElementById('esp-ip').innerText = `IP: ${data.ip || 'Bilinmiyor'}`;
-        const statusInd = document.getElementById('status-indicator');
-        const statusText = document.getElementById('status-text');
-        
-        if (data.online) {
-          statusInd.className = "flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-medium";
-          statusText.innerText = "Aktif";
-        } else {
-          statusInd.className = "flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 text-xs font-medium";
-          statusText.innerText = "Çevrimdışı";
-        }
+    // Oturum kontrolü
+    window.onload = function() {
+      if (sessionStorage.getItem("authenticated") === "true") {
+        showPanel();
       }
-    });
+    };
 
-    // 2. Relays State Updates
-    database.ref('relays').on('value', (snapshot) => {
-      const relays = snapshot.val();
-      if (relays) {
-        Object.keys(relays).forEach((key) => {
-          const relay = relays[key];
-          const id = parseInt(key.replace('relay_', ''));
+    function handleKeyPress(event) {
+      if (event.key === "Enter") {
+        checkPassword();
+      }
+    }
+
+    function checkPassword() {
+      const input = document.getElementById("password-input").value;
+      const errorMsg = document.getElementById("error-message");
+
+      if (input === KONTROL_SIFRESI) {
+        sessionStorage.setItem("authenticated", "true");
+        showPanel();
+      } else {
+        errorMsg.style.display = "block";
+      }
+    }
+
+    function showPanel() {
+      document.getElementById("login-box").style.display = "none";
+      const container = document.getElementById("relay-container");
+      container.style.display = "grid";
+
+      initPanel();
+    }
+
+    function initPanel() {
+      const container = document.getElementById('relay-container');
+      container.innerHTML = "";
+
+      relayNames.forEach((name, index) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <h3>${name}</h3>
+          <label class="switch">
+            <input type="checkbox" id="relay-${index}" onchange="toggleRelay(${index}, this.checked)">
+            <span class="slider"></span>
+          </label>
+          <div class="status" id="status-${index}">KAPALI</div>
+        `;
+        container.appendChild(card);
+
+        // Firebase Canlı Dinleme
+        database.ref(`relays/relay_${index}/state`).on('value', (snapshot) => {
+          const state = snapshot.val() || false;
+          const checkbox = document.getElementById(`relay-${index}`);
+          const statusText = document.getElementById(`status-${index}`);
           
-          if (!isNaN(id) && id >= 0 && id < 16) {
-            updateCardUI(id, relay.name || `Röle ${id + 1}`, relay.state || false);
+          if (checkbox && statusText) {
+            checkbox.checked = state;
+            statusText.innerText = state ? "AÇIK" : "KAPALI";
+            statusText.style.color = state ? "#22c55e" : "#94a3b8";
           }
         });
-      }
-    });
-
-    function updateCardUI(id, name, state) {
-      const toggle = document.getElementById(`toggle-${id}`);
-      const statusText = document.getElementById(`status-text-${id}`);
-      const iconBox = document.getElementById(`icon-box-${id}`);
-      const card = document.getElementById(`relay-card-${id}`);
-
-      if (toggle) toggle.checked = state;
-      if (statusText) {
-        statusText.innerText = state ? 'Açık' : 'Kapalı';
-        statusText.className = `text-xs mt-0.5 ${state ? 'text-sky-400 font-medium' : 'text-slate-500'}`;
-      }
-      if (iconBox) {
-        iconBox.className = `w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${state ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30' : 'bg-slate-800 text-slate-500'}`;
-      }
-      if (card) {
-        card.className = `glass-card rounded-2xl p-5 transition-all duration-300 border ${state ? 'border-sky-500/40 shadow-lg shadow-sky-500/10' : 'border-slate-800'}`;
-      }
+      });
     }
 
-    // WRITE TO FIREBASE ON TOGGLE
-    function toggleRelay(id, state) {
-      database.ref(`relays/relay_${id}/state`).set(state);
-    }
-
-    function setAllRelays(state) {
-      const updates = {};
-      for (let i = 0; i < 16; i++) {
-        updates[`relays/relay_${i}/state`] = state;
-      }
-      database.ref().update(updates);
+    function toggleRelay(index, state) {
+      database.ref(`relays/relay_${index}/state`).set(state);
     }
   </script>
 </body>
